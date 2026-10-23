@@ -18,7 +18,7 @@ Members join a **➕ Join to Create** channel and get their own voice room, whic
 ## Quick start
 
 ```bash
-git clone <your-fork-or-repo-url> voicey
+git clone https://github.com/ZiadAgamy/Voicey.git voicey
 cd voicey
 npm install
 cp .env.example .env     # then edit .env and add FLUXER_BOT_TOKEN
