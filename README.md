@@ -1,4 +1,4 @@
-# 🎙️ Voicey
+# 🎙️ [Voicey](https://web.fluxer.app/oauth2/authorize?client_id=1553833004374175744&scope=bot&permissions=18014398810778736)
 
 **Easy temporary voice channels for [Fluxer](https://fluxer.app).**
 Members join a **➕ Join to Create** channel and get their own voice room, which they control with simple prefix commands. When everyone leaves, the room is deleted automatically.
@@ -72,3 +72,4 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md). To report a s
 
 [MIT](LICENSE)
 # Voicey
+Invite [Voicey](https://web.fluxer.app/oauth2/authorize?client_id=1553833004374175744&scope=bot&permissions=18014398810778736)
