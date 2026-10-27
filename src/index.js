@@ -89,5 +89,9 @@ client.on(Events.Error, (err) => {
 process.on('unhandledRejection', (err) => {
   console.error('[Voicey] Unhandled rejection:', err);
 });
+// allows the bot to auto reconnect without a restart
+client.on(Events.Resumed, () => {
+  console.log('Bot should be recomnnected')
+})
 
 await client.login(token);
