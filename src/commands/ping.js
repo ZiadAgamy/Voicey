@@ -1,3 +1,4 @@
+
 import { EmbedBuilder } from '@fluxerjs/core';
 import { t } from '../i18n/index.js';
 
@@ -6,6 +7,9 @@ export default {
 
   async execute({ message, locale }) {
     const start = Date.now();
+
+    // Send a temporary message to measure API response time
+    const pongMessage = await message.reply('🏓 Pinging...');
 
     const latency = Date.now() - start;
 
@@ -18,10 +22,6 @@ export default {
       )
       .setColor(0x4641d9);
 
-    const pongMessage = await message.reply({
-      embeds: [embed],
-    });
-
-    return pongMessage;
+    return pongMessage.edit({ embeds: [embed] });
   },
 };
