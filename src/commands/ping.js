@@ -7,8 +7,6 @@ export default {
   async execute({ message, locale }) {
     const start = Date.now();
 
-    const pingMessage = await message.reply('🏓 Pinging...');
-
     const latency = Date.now() - start;
 
     const embed = new EmbedBuilder()
@@ -23,8 +21,6 @@ export default {
     const pongMessage = await message.reply({
       embeds: [embed],
     });
-
-    await pingMessage.delete();
 
     return pongMessage;
   },
