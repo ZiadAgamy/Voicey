@@ -1,3 +1,4 @@
+
 import { EmbedBuilder } from '@fluxerjs/core';
 import { t } from '../i18n/index.js';
 
@@ -7,17 +8,28 @@ export default {
   async execute({ message, locale }) {
     const start = Date.now();
 
-    const embed = new EmbedBuilder()
+    const initialEmbed = new EmbedBuilder()
       .setTitle('🏓 Pong!')
       .setDescription(
-        t(locale, 'ping.result', {
-          ms: Date.now() - start,
-        }),
+        t(locale, 'ping.result', { ms: '...' }),
       )
       .setColor(0x4641d9);
 
-    return message.reply({
-      embeds: [embed],
+    const pongMessage = await message.reply({
+      embeds: [initialEmbed],
+    });
+
+    const latency = Date.now() - start;
+
+    const finalEmbed = new EmbedBuilder()
+      .setTitle('🏓 Pong!')
+      .setDescription(
+        t(locale, 'ping.result', { ms: latency }),
+      )
+      .setColor(0x4641d9);
+
+    return pongMessage.edit({
+      embeds: [finalEmbed],
     });
   },
 };
