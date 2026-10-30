@@ -7,7 +7,7 @@ export default {
   async execute({ message, locale }) {
     const start = Date.now();
 
-    const reply = await message.reply('🏓 Pinging...');
+    const pingMessage = await message.reply('🏓 Pinging...');
 
     const latency = Date.now() - start;
 
@@ -20,6 +20,12 @@ export default {
       )
       .setColor(0x4641d9);
 
-    return reply.edit({ embeds: [embed] });
+    const pongMessage = await message.reply({
+      embeds: [embed],
+    });
+
+    await pingMessage.delete();
+
+    return pongMessage;
   },
 };
