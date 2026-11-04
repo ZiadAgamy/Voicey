@@ -27,6 +27,18 @@ npm start
 
 In your server, run `!setup` (or `!setup-wizard` for a guided setup).
 
+## Web dashboard
+
+Voicey ships with an optional dashboard that runs inside the bot process (it shares the bot's database and live voice state).
+
+1. In the Fluxer developer portal, open your application and add the redirect URI `<DASHBOARD_URL>/auth/callback` (for local testing: `http://localhost:3000/auth/callback`). Copy the **Client ID** and **Client Secret**.
+2. Add to `.env`: `DASHBOARD_ENABLED=true`, `DASHBOARD_URL`, `FLUXER_CLIENT_ID`, `FLUXER_CLIENT_SECRET` (see `.env.example`).
+3. `npm install` then `npm start`, and open the dashboard URL.
+
+Features: login with Fluxer, server sidebar (only servers where you have Manage Community; servers without Voicey are greyed out), per-server prefix / language / deletion delay / channel name template, live view of members in temporary channels, one-click setup, **per-server bot profile** (name, avatar, banner, bio with live preview) and **command control** (enable/disable every command, and restrict any command to specific roles/members).
+
+Command access rules: an empty role/member list means the default — commands that need Manage Community stay manager-only, never public. Once you add roles/members, only they (plus the server owner and Administrators) can run that command, and listed members can use a Manage Community command without holding that permission. `@everyone` can never be added.
+
 ## Bot permissions
 
 Invite the bot with these permissions. `!check` verifies them for you.

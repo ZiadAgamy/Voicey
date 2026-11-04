@@ -5,6 +5,7 @@ import { Events, EmbedBuilder } from '@fluxerjs/core';
 import { ensureGuild } from '../db/index.js';
 import { DEFAULT_LOCALE, t } from '../i18n/index.js';
 import { embedWithAsset } from '../utils/embedAssets.js';
+import { evaluateCommandAccess } from '../services/commandAccess.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const COMMANDS_DIR = path.join(__dirname, '..', 'commands');
@@ -68,7 +69,6 @@ export function attachCommandHandler(client, commands) {
       const locale = settings?.language ?? DEFAULT_LOCALE;
       const prefix = settings?.prefix ?? process.env.BOT_PREFIX?.trim() ?? '!';
 
-      // Mentioning Voicey is always a quick way to discover the current prefix.
       // A real prefix command still takes priority, so "!help @Voicey" is normal.
       if (guildId && isBotMentioned(message, client)) {
         const withoutMention = removeBotMention(message.content ?? '', client.user.id);
@@ -87,6 +87,21 @@ export function attachCommandHandler(client, commands) {
       const command = commands.get(commandName);
       if (!command) return;
 
+      // Per-server rules from the dashboard: disabled commands and role/member access.
+      let access = { allowed: true, granted: false };
+      if (guildId) {
+        const guild = client.guilds.get(guildId) ?? (await message.resolveGuild().catch(() => null));
+        if (guild) {
+          access = await evaluateCommandAccess(guild, message.author.id, command.name);
+          if (!access.allowed) {
+            await message
+              .reply(t(locale, access.reason === 'disabled' ? 'common.command_disabled' : 'common.command_no_access'))
+              .catch(() => {});
+            return;
+          }
+        }
+      }
+
       await command.execute({
         client,
         message,
@@ -94,13 +109,14 @@ export function attachCommandHandler(client, commands) {
         locale,
         prefix,
         settings,
+        access,
       });
     } catch (err) {
       console.error('[Voicey] Error running command:', err);
       try {
         await message.reply('⚠️ Something went wrong running that command.');
       } catch {
-        /* channel may be gone; ignore */
+
       }
     }
   });

@@ -8,7 +8,7 @@ import { embedWithAsset } from '../utils/embedAssets.js';
 
 export default {
   name: 'setup',
-  async execute({ message, locale, prefix, guildId = message.guildId, guild: guildArg }) {
+  async execute({ message, locale, prefix, access, guildId = message.guildId, guild: guildArg }) {
     if (!message.guildId) {
       return message.reply(t(locale, 'common.dm_only_in_guild'));
     }
@@ -19,14 +19,13 @@ export default {
     const member = guild.members.get(message.author.id) ??
       (await guild.fetchMember(message.author.id).catch(() => null));
     const isOwner = guild.ownerId === message.author.id;
-    if (!isOwner && !member?.permissions?.has(PermissionFlags.ManageGuild)) {
+    if (!access?.granted && !isOwner && !member?.permissions?.has(PermissionFlags.ManageGuild)) {
       return message.reply(t(locale, 'setup.no_permission'));
     }
 
     const existing = getGuildSettings(guild.id);
     if (existing?.join_channel_id) {
-      // Only refuse if the Join-to-Create channel still exists. If someone
-      // deleted it by hand, the saved setup is dead — forget it and rebuild.
+      // Only refuse if the Join-to-Create channel still exists.
       const joinStillExists = await message.client.channels
         .fetch(existing.join_channel_id)
         .catch(() => null);
@@ -82,7 +81,6 @@ export default {
       });
     } catch (err) {
       console.error('[Voicey] !setup failed:', err);
-      // Don't leave half a setup lying around.
       for (const ch of created.reverse()) await ch.delete().catch(() => {});
       clearSetup(guild.id);
       await message

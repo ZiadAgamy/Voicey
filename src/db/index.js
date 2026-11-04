@@ -43,6 +43,32 @@ CREATE TABLE IF NOT EXISTS channel_members (
   PRIMARY KEY (channel_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS web_sessions (
+  id            TEXT PRIMARY KEY,
+  user_id       TEXT NOT NULL,
+  username      TEXT NOT NULL,
+  avatar        TEXT,
+  access_token  TEXT NOT NULL,
+  refresh_token TEXT,
+  expires_at    INTEGER NOT NULL,
+  created_at    INTEGER NOT NULL DEFAULT (unixepoch())
+);
+
+CREATE TABLE IF NOT EXISTS command_rules (
+  guild_id TEXT NOT NULL,
+  command  TEXT NOT NULL,
+  enabled  INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (guild_id, command)
+);
+
+CREATE TABLE IF NOT EXISTS command_access (
+  guild_id  TEXT NOT NULL,
+  command   TEXT NOT NULL,
+  kind      TEXT NOT NULL, -- 'role' | 'member'
+  target_id TEXT NOT NULL,
+  PRIMARY KEY (guild_id, command, kind, target_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_temp_channels_guild ON temp_channels(guild_id);
 CREATE INDEX IF NOT EXISTS idx_temp_channels_owner ON temp_channels(owner_id);
 `);
@@ -65,8 +91,6 @@ for (const statement of [
   }
 }
 
-// node:sqlite returns null-prototype rows; copy into plain objects so the rest
-// of the bot behaves exactly as it did with any other driver.
 const plain = (row) => (row ? { ...row } : undefined);
 const plainAll = (rows) => rows.map((r) => ({ ...r }));
 
@@ -226,4 +250,92 @@ export function getMembersByStatus(channelId, status) {
     .prepare('SELECT user_id FROM channel_members WHERE channel_id = ? AND status = ?')
     .all(channelId, status)
     .map((r) => r.user_id);
+}
+
+// ---------- dashboard web sessions ----------
+
+export function createWebSession(s) {
+  db.prepare(
+    `INSERT INTO web_sessions (id, user_id, username, avatar, access_token, refresh_token, expires_at)
+     VALUES (@id, @userId, @username, @avatar, @accessToken, @refreshToken, @expiresAt)`,
+  ).run({ refreshToken: null, avatar: null, ...s });
+}
+
+export function getWebSession(id) {
+  return plain(db.prepare('SELECT * FROM web_sessions WHERE id = ?').get(id));
+}
+
+export function updateWebSessionTokens(id, { accessToken, refreshToken, expiresAt }) {
+  db.prepare(
+    'UPDATE web_sessions SET access_token = ?, refresh_token = ?, expires_at = ? WHERE id = ?',
+  ).run(accessToken, refreshToken ?? null, expiresAt, id);
+}
+
+export function deleteWebSession(id) {
+  db.prepare('DELETE FROM web_sessions WHERE id = ?').run(id);
+}
+
+export function purgeOldWebSessions(maxAgeSeconds) {
+  db.prepare('DELETE FROM web_sessions WHERE created_at < unixepoch() - ?').run(maxAgeSeconds);
+}
+
+// ---------- per-server command rules (enable/disable + role/member access) ----------
+
+/** { enabled, roles: [roleId], members: [userId] } for one command (defaults when nothing is stored). */
+export function getCommandRule(guildId, command) {
+  const row = db
+    .prepare('SELECT enabled FROM command_rules WHERE guild_id = ? AND command = ?')
+    .get(guildId, command);
+  const access = db
+    .prepare('SELECT kind, target_id FROM command_access WHERE guild_id = ? AND command = ?')
+    .all(guildId, command);
+  return {
+    enabled: row ? row.enabled === 1 : true,
+    roles: access.filter((a) => a.kind === 'role').map((a) => a.target_id),
+    members: access.filter((a) => a.kind === 'member').map((a) => a.target_id),
+  };
+}
+
+/** Every stored rule of a guild, keyed by command name. Commands without rows use defaults. */
+export function getGuildCommandRules(guildId) {
+  const rules = {};
+  const entry = (c) => (rules[c] ??= { enabled: true, roles: [], members: [] });
+  for (const r of db.prepare('SELECT command, enabled FROM command_rules WHERE guild_id = ?').all(guildId)) {
+    entry(r.command).enabled = r.enabled === 1;
+  }
+  for (const a of db
+    .prepare('SELECT command, kind, target_id FROM command_access WHERE guild_id = ?')
+    .all(guildId)) {
+    entry(a.command)[a.kind === 'role' ? 'roles' : 'members'].push(a.target_id);
+  }
+  return rules;
+}
+
+export function setCommandRule(guildId, command, { enabled, roles, members }) {
+  db.exec('BEGIN');
+  try {
+    if (enabled) {
+      db.prepare('DELETE FROM command_rules WHERE guild_id = ? AND command = ?').run(guildId, command);
+    } else {
+      db.prepare(
+        `INSERT INTO command_rules (guild_id, command, enabled) VALUES (?, ?, 0)
+         ON CONFLICT(guild_id, command) DO UPDATE SET enabled = 0`,
+      ).run(guildId, command);
+    }
+    db.prepare('DELETE FROM command_access WHERE guild_id = ? AND command = ?').run(guildId, command);
+    const ins = db.prepare(
+      'INSERT OR IGNORE INTO command_access (guild_id, command, kind, target_id) VALUES (?, ?, ?, ?)',
+    );
+    for (const id of roles) ins.run(guildId, command, 'role', id);
+    for (const id of members) ins.run(guildId, command, 'member', id);
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+}
+
+export function resetGuildCommandRules(guildId) {
+  db.prepare('DELETE FROM command_rules WHERE guild_id = ?').run(guildId);
+  db.prepare('DELETE FROM command_access WHERE guild_id = ?').run(guildId);
 }

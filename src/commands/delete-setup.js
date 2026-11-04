@@ -4,7 +4,6 @@ import { Emojis } from '../config/emojis.js';
 import { askConfirm } from '../utils/confirm.js';
 import { getGuildSettings, clearSetup, tempChannelsForGuild, deleteTempChannel } from '../db/index.js';
 
-/** Delete a channel by id; a channel that's already gone counts as success. */
 async function removeChannel(client, id) {
   if (!id) return;
   const channel = client.channels.get(id) ?? (await client.channels.fetch(id).catch(() => null));
@@ -14,7 +13,7 @@ async function removeChannel(client, id) {
 export default {
   name: 'delete-setup',
   aliases: ['deletesetup', 'resetsetup'],
-  async execute({ client, message, locale, prefix }) {
+  async execute({ client, message, locale, prefix, access }) {
     if (!message.guildId) return message.reply(t(locale, 'common.dm_only_in_guild'));
 
     const guild = await message.resolveGuild();
@@ -23,7 +22,7 @@ export default {
     const member = guild.members.get(message.author.id) ??
       (await guild.fetchMember(message.author.id).catch(() => null));
     const isOwner = guild.ownerId === message.author.id;
-    if (!isOwner && !member?.permissions?.has(PermissionFlags.ManageGuild)) {
+    if (!access?.granted && !isOwner && !member?.permissions?.has(PermissionFlags.ManageGuild)) {
       return message.reply(t(locale, 'deletesetup.no_permission'));
     }
 
@@ -87,8 +86,6 @@ export default {
         .catch(() => {});
     }
 
-    // The command may have been typed inside a temp channel that no longer
-    // exists, in which case this reply has nowhere to go — that's fine.
     await message
       .reply(t(locale, 'deletesetup.done', { prefix }))
       .catch(() => {});

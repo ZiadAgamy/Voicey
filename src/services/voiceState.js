@@ -1,11 +1,5 @@
 import { Events } from '@fluxerjs/core';
 
-/**
- * Tracks which voice channel each user is currently connected to.
- *
- * Shape:
- * Map<guildId, Map<userId, { channelId, connectionId }>>
- */
 const voiceStates = new Map();
 
 function guildMapFor(guildId) {
@@ -41,24 +35,13 @@ function normalizeVoiceState(vs) {
 }
 
 export function initVoiceState(client) {
-  /**
-   * The gateway only sends VoiceStatesSync when at least one user is in voice.
-   * A guild with nobody in voice therefore has no snapshot at all, which means
-   * "empty", not "unknown". Mark the guild as known on GuildCreate so cleanup
-   * of orphaned channels still works after a restart.
-   */
+
   client.on(Events.GuildCreate, (guild) => {
     if (guild?.id && !voiceStates.has(String(guild.id))) {
       voiceStates.set(String(guild.id), new Map());
     }
   });
 
-  /**
-   * VoiceStatesSync is a complete snapshot.
-   *
-   * Replace the previous map instead of merging into it.
-   * This prevents stale/ghost users after a reconnect.
-   */
   client.on(Events.VoiceStatesSync, (data) => {
     const guildId = data?.guild_id ?? data?.guildId;
     if (!guildId) return;
@@ -78,9 +61,6 @@ export function initVoiceState(client) {
     }
   });
 
-  /**
-   * Registered before login so normal voice updates are tracked immediately.
-   */
   client.on(Events.VoiceStateUpdate, (data) => {
     const guildId = data?.guild_id ?? data?.guildId;
     const vs = normalizeVoiceState(data);
@@ -112,7 +92,6 @@ export function hasGuildState(guildId) {
   return voiceStates.has(String(guildId));
 }
 
-/** Ids of every user currently connected to `channelId`. */
 export function getUserIdsInChannel(guildId, channelId) {
   const map = voiceStates.get(String(guildId));
   if (!map) return [];
@@ -141,4 +120,10 @@ export function countMembersInChannel(guild, channelId) {
 
 export function clearGuildVoiceState(guildId) {
   voiceStates.delete(String(guildId));
+}
+
+export function getGuildVoiceStates(guildId) {
+  const map = voiceStates.get(String(guildId));
+  if (!map) return [];
+  return [...map.entries()].map(([userId, state]) => ({ userId, channelId: state.channelId }));
 }

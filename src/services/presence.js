@@ -4,7 +4,7 @@ export function updatePresence(client) {
   const count = client.guilds?.size ?? 0;
 
   const customStatus = {
-    text: `Voicing ${count.toLocaleString('en-US')} servers`,
+    text: `Voicing ${count.toLocaleString('en-US')} communities`,
   };
 
   // Optional custom emoji next to the status text.

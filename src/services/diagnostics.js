@@ -7,7 +7,6 @@ const CHECKS = [
   ['Send Messages', PermissionFlags.SendMessages],
   ['Embed Links', PermissionFlags.EmbedLinks],
   ['Manage Channels', PermissionFlags.ManageChannels],
-  ['Manage Permissions', PermissionFlags.ManagePermissions],
   ['Move Members', PermissionFlags.MoveMembers],
   ['Create Invite', PermissionFlags.CreateInstantInvite],
   ['Connect', PermissionFlags.Connect],

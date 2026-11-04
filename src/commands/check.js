@@ -6,7 +6,7 @@ import { Emojis } from '../config/emojis.js';
 export default {
   name: 'check',
   aliases: ['permissions', 'health'],
-  async execute({ message, locale, prefix }) {
+  async execute({ message, locale, prefix, access }) {
     if (!message.guildId) {
       return message.reply(t(locale, 'common.dm_only_in_guild'));
     }
@@ -17,6 +17,7 @@ export default {
     const member = guild.members.get(message.author.id) ??
       (await guild.fetchMember(message.author.id).catch(() => null));
     if (
+      !access?.granted &&
       guild.ownerId !== message.author.id &&
       !member?.permissions?.has(PermissionFlags.ManageGuild)
     ) {
@@ -29,7 +30,6 @@ export default {
       .setDescription(t(locale, result.healthy ? 'diagnostics.check_healthy' : 'diagnostics.check_issues', { prefix }))
       .setColor(result.healthy ? 0x4641d9 : 0xf59e0b);
 
-    // Separate fields avoid literal "\n" rendering on clients with inconsistent embed parsing.
     for (const check of result.checks) {
       embed.addFields({
         name: `${check.ok ? '✅' : '❌'} ${check.name}`,

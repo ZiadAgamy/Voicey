@@ -13,14 +13,6 @@ import {
 import { buildErrorEmbed, buildSuccessEmbed, transferOwnership, moveMember } from './tempVoiceManager.js';
 import { isUserInChannel } from './voiceState.js';
 
-/**
- * Every function here takes the same `ctx` shape:
- *   { client, guild, channel, member, tempChannel, locale, args? }
- * and replies in the temporary voice channel.
- *
- * Ownership rule: unless noted, only tempChannel.owner_id may act.
- */
-
 function isOwner(ctx) {
   return ctx.member.id === ctx.tempChannel.owner_id;
 }
@@ -55,8 +47,6 @@ export async function rename(ctx, nameArg) {
     await ctx.channel.edit({ name });
     await reply(ctx, success(ctx, 'name.success', { name }));
   } catch (err) {
-    // The SDK already retries rate-limited requests; if one still fails
-    // (e.g. Fluxer's channel-rename cooldown) tell the user instead of crashing.
     if (err?.name === 'RateLimitError' || err?.status === 429) {
       return reply(ctx, error(ctx, 'name.rate_limited'));
     }
@@ -95,9 +85,6 @@ export async function privacy(ctx, modeArg) {
       allow: [],
     });
   } else {
-    // Remove the overwrite instead of explicitly allowing Connect, so the
-    // channel goes back to inheriting the category/server rules rather than
-    // becoming open to everyone.
     await ctx.channel.permissionOverwrites.delete(ctx.guild.id).catch(() => {});
   }
 
@@ -110,7 +97,7 @@ export async function trust(ctx, targetId) {
   if (!targetId) return reply(ctx, error(ctx, 'add.usage'));
   if (targetId === ctx.member.id) return reply(ctx, error(ctx, 'add.cannot_add_self'));
 
-  clearMemberStatus(ctx.channel.id, targetId); // clear any prior block
+  clearMemberStatus(ctx.channel.id, targetId);
   setMemberStatus(ctx.channel.id, targetId, 'trusted');
 
   await ctx.channel.permissionOverwrites.edit(targetId, {
@@ -335,7 +322,6 @@ export async function del(ctx) {
       await ctx.channel.delete();
       deleteTempChannel(ctx.channel.id);
     } catch (err) {
-      // Keep the DB row so the channel isn't orphaned and can still be cleaned up.
       console.warn('[Voicey] Could not delete temp channel:', err?.message ?? err);
       await reply(ctx, error(ctx, 'common.error'));
     }

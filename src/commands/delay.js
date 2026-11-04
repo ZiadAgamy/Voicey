@@ -5,14 +5,14 @@ import { t } from '../i18n/index.js';
 export default {
   name: 'delay',
   aliases: ['grace'],
-  async execute({ message, args, locale, prefix }) {
+  async execute({ message, args, locale, prefix, access }) {
     if (!message.guildId) return message.reply(t(locale, 'common.dm_only_in_guild'));
     const guild = await message.resolveGuild();
     if (!guild) return message.reply(t(locale, 'common.error'));
 
     const member = guild.members.get(message.author.id) ??
       (await guild.fetchMember(message.author.id).catch(() => null));
-    if (guild.ownerId !== message.author.id && !member?.permissions?.has(PermissionFlags.ManageGuild)) {
+    if (!access?.granted && guild.ownerId !== message.author.id && !member?.permissions?.has(PermissionFlags.ManageGuild)) {
       return message.reply(t(locale, 'delay.no_permission'));
     }
 

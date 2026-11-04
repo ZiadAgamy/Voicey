@@ -9,6 +9,7 @@ import { sendGuildWelcome } from './services/welcome.js';
 import { clearWelcomeSent } from './db/index.js';
 import { startPresence, updatePresence } from './services/presence.js';
 import { initLogger } from './services/logger.js';
+import { startWebDashboard } from './web/server.js';
 
 const token = process.env.FLUXER_BOT_TOKEN;
 
@@ -23,15 +24,11 @@ loadLocales();
 
 const client = new Client();
 
-// Must be registered before login so it captures VoiceStatesSync from
-// READY/GUILD_CREATE.
 initVoiceState(client);
 
 let booted = false;
 
 client.on(Events.Ready, async () => {
-  // Ready can fire again after a full re-identify. Everything below must only
-  // be wired once, otherwise every command would run twice.
   if (booted) {
     updatePresence(client);
     return;
@@ -48,6 +45,9 @@ client.on(Events.Ready, async () => {
   attachCommandHandler(client, commands);
 
   startPresence(client);
+
+  // Optional web dashboard (enabled when DASHBOARD_ENABLED=true).
+  startWebDashboard(client);
 
   // Clean up temp channels that went empty while Voicey was offline.
   setTimeout(() => {
@@ -89,9 +89,10 @@ client.on(Events.Error, (err) => {
 process.on('unhandledRejection', (err) => {
   console.error('[Voicey] Unhandled rejection:', err);
 });
-// allows the bot to auto reconnect without a restart
+
+// Allows the bot to auto reconnect without a restart
 client.on(Events.Resumed, () => {
-  console.log('Bot should be recomnnected')
+  console.log('[Voicey] Reconnected to the hosting')
 })
 
 await client.login(token);

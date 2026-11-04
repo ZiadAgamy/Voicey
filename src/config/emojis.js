@@ -1,30 +1,5 @@
-/**
- * Voicey — custom emoji registry.
- *
- * Every emoji Voicey uses (in embeds, reactions, and buttons-as-reactions on
- * the dashboard) is defined here, in ONE place, as `<:name:id>` / `<a:name:id>`
- * strings. Nothing else in the codebase hardcodes an emoji — every other file
- * imports from here. That's the whole point of the file: swap an ID once and
- * the change applies everywhere the emoji is used.
- *
- * HOW TO FILL THIS IN
- * --------------------
- * Voicey is a public, multi-server bot, so it cannot rely on per-guild emoji
- * (guild.createEmoji / guild.fetchEmojis only work inside a single guild).
- * Instead, upload Voicey's emoji set once as a Fluxer "expression pack"
- * (see https://docs.fluxer.app/api-reference/packs) using the bot's own
- * account, or host them in a single "home" guild the bot owns and reference
- * that guild's emoji IDs — either way the emoji is available to react/embed
- * in *any* server Voicey is added to, same as Discord "application emojis".
- *
- * Until you've created the pack/home-guild and grabbed real IDs, every emoji
- * below falls back to a plain Unicode emoji, so the bot runs correctly out
- * of the box. Replace the `raw` value with `<:name:123456789012345678>` once
- * you've uploaded Voicey's emoji, and nothing else needs to change.
- */
-
 function custom(name, id, fallback, animated = false) {
-  if (!id) return fallback; // not uploaded yet — safe Unicode fallback
+  if (!id) return fallback; // if not uploaded yet — a safe Unicode fallback
   return `<${animated ? 'a' : ''}:${name}:${id}>`;
 }
 
@@ -90,10 +65,6 @@ export const Emojis = {
   gear: custom('voicey_gear', ID.gear, '⚙️'),
 };
 
-/**
- * Compare a reaction event emoji ({ name, id }) with a registered emoji.
- * Confirmation reactions use this so both Unicode and custom emojis work.
- */
 export function isEmoji(reactionEmoji, registryEmoji) {
   if (!reactionEmoji || !registryEmoji) return false;
   const custom = /^<a?:(\w+):(\d+)>$/.exec(registryEmoji);

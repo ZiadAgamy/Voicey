@@ -6,7 +6,7 @@ import { embedWithAsset } from '../utils/embedAssets.js';
 export default {
   name: 'language',
   aliases: ['lang'],
-  async execute({ message, args, locale, prefix }) {
+  async execute({ message, args, locale, prefix, access }) {
     if (!message.guildId) return message.reply(t(locale, 'common.dm_only_in_guild'));
 
     const guild = await message.resolveGuild();
@@ -29,7 +29,7 @@ export default {
     }
 
     const isOwner = guild?.ownerId === message.author.id;
-    if (!isOwner && !member?.permissions?.has(PermissionFlags.ManageGuild)) {
+    if (!access?.granted && !isOwner && !member?.permissions?.has(PermissionFlags.ManageGuild)) {
       return message.reply(t(locale, 'language.no_permission'));
     }
 

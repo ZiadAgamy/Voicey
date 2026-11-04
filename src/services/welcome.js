@@ -9,11 +9,6 @@ function sortedTextChannels(guild) {
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 }
 
-/**
- * Send the first successful welcome message after Voicey joins a server.
- * We try channels in their visible order until one accepts a message.
- * The database flag prevents the message from being sent again on restart.
- */
 export async function sendGuildWelcome(guild) {
   if (!guild?.id) return false;
 
@@ -53,7 +48,7 @@ export async function sendGuildWelcome(guild) {
       markWelcomeSent(guild.id);
       return true;
     } catch {
-      // No Send Messages permission here. Try the next text channel.
+
     }
   }
 

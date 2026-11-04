@@ -28,11 +28,6 @@ import {
   hasGuildState,
 } from './voiceState.js';
 
-/**
- * Grace period for a newly-created temporary channel.
- *
- * The channel is not deleted immediately if the move takes a moment.
- */
 export const NEW_CHANNEL_GRACE_MS = 60_000;
 
 const MAX_CHANNEL_NAME_LENGTH = 32;
@@ -43,19 +38,11 @@ function formatChannelName(template, displayName, memberCount = 1) {
     .replaceAll('{user}', safeName)
     .replaceAll('{username}', safeName)
     .replaceAll('{count}', String(memberCount));
-  // Array.from keeps emoji (surrogate pairs) intact when truncating.
   return Array.from(rendered).slice(0, MAX_CHANNEL_NAME_LENGTH).join('') || `🔊 ${safeName}'s Channel`;
 }
 
-/**
- * Prevents duplicate channel creation if multiple voice events arrive
- * while the same member is being moved.
- */
 const creating = new Set();
 
-/**
- * Creates a short description for API/SDK errors.
- */
 export function describeError(err) {
   const parts = [
     err?.code,
@@ -78,15 +65,7 @@ export function describeError(err) {
   );
 }
 
-/**
- * Moves or disconnects a member.
- *
- * Fluxer voice sessions can provide a connection_id, so we try that first.
- */
 export async function moveMember(guild, userId, channelId) {
-  // Fluxer does not allow bots to move the actual server owner. A user who
-  // owns a Voicey temporary channel is otherwise a normal member and MUST
-  // still be moved. Do not confuse temp-channel ownership with guild ownership.
   if (guild.ownerId === userId) return false;
 
   const connectionId = getUserConnectionId(guild.id, userId);
@@ -102,14 +81,10 @@ export async function moveMember(guild, userId, channelId) {
     if (!member) return false;
 
     try {
-      // The normal member move does not need a connection id. Try that first
-      // because stale connection IDs can make an otherwise valid move fail.
       await member.move(channelId, connection);
 
       if (!channelId) return true;
 
-      // Give the gateway a moment to publish the new voice state, then verify
-      // that the member actually arrived. This prevents a false success.
       for (let attempt = 0; attempt < 5; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 150));
         if (getUserVoiceChannelId(guild.id, userId) === channelId) {
@@ -117,8 +92,6 @@ export async function moveMember(guild, userId, channelId) {
         }
       }
 
-      // The API accepted the move but the gateway snapshot has not caught up
-      // yet. Treat the API call as successful rather than repeatedly moving.
       return true;
     } catch (err) {
       console.warn(
@@ -131,9 +104,6 @@ export async function moveMember(guild, userId, channelId) {
   return false;
 }
 
-/**
- * VoiceStateUpdate handler.
- */
 export async function handleVoiceStateUpdate(client, data) {
   const guildId = data?.guild_id;
 
@@ -155,9 +125,6 @@ export async function handleVoiceStateUpdate(client, data) {
   const newChannelId = data.channel_id ?? null;
   const isBot = Boolean(data.member?.user?.bot ?? data.user?.bot);
 
-  /**
-   * User entered Join-to-Create.
-   */
   if (newChannelId === settings.join_channel_id && !isBot) {
     const key = `${guildId}:${userId}`;
 
@@ -177,16 +144,9 @@ export async function handleVoiceStateUpdate(client, data) {
     }
   }
 
-  /**
-   * Every voice event is an opportunity to clean up
-   * empty temporary channels.
-   */
   await sweepEmptyChannels(client, guild);
 }
 
-/**
- * Resolve the category where temporary channels should be created.
- */
 async function resolveParentId(client, guild, settings) {
   if (!settings.category_id) {
     return undefined;
@@ -207,11 +167,6 @@ async function resolveParentId(client, guild, settings) {
   return undefined;
 }
 
-/**
- * Creates a voice channel.
- *
- * If the saved category disappeared, retry without it.
- */
 async function createVoiceChannel(guild, options, parentId) {
   try {
     return await guild.createChannel({
@@ -219,8 +174,6 @@ async function createVoiceChannel(guild, options, parentId) {
       parentId,
     });
   } catch (err) {
-    // Only retry without a parent when the saved category is invalid.
-    // Permission/network errors should be surfaced instead of hidden.
     const code = String(err?.code ?? '');
     const message = String(err?.message ?? '').toLowerCase();
     const invalidParent =
@@ -239,18 +192,13 @@ async function createVoiceChannel(guild, options, parentId) {
   }
 }
 
-/**
- * Creates a temporary channel for a member.
- */
 async function createChannelForUser(
   client,
   guild,
   settings,
   userId,
 ) {
-  /**
-   * Never create two temporary channels for the same owner.
-   */
+
   const existing = getTempChannelByOwner(
     guild.id,
     userId,
@@ -304,19 +252,12 @@ async function createChannelForUser(
     parentId,
   );
 
-  /**
-   * Store immediately so the channel can be cleaned even
-   * if a later operation fails.
-   */
   createTempChannel(
     channel.id,
     guild.id,
     userId,
   );
 
-  // Explicitly grant the temporary-channel owner access. This is important
-  // when the server's default role/channel permissions deny Connect or View
-  // Channel; ownership must never prevent the owner from entering their room.
   await channel.permissionOverwrites.edit(userId, {
     type: OverwriteType.Member,
     allow: [PermissionFlags.Connect, PermissionFlags.ViewChannel],
@@ -330,10 +271,6 @@ async function createChannelForUser(
 
   const isGuildOwner = guild.ownerId === userId;
 
-  /**
-   * A temporary-channel owner must be moved just like every other member.
-   * The only user Fluxer refuses to move is the actual server owner.
-   */
   if (isGuildOwner) {
     const joinNotice = new EmbedBuilder()
       .setTitle(`${Emojis.voicey} Voice channel ready`)
@@ -353,8 +290,6 @@ async function createChannelForUser(
   } else {
     let moved = await moveMember(guild, userId, channel.id);
 
-    // Voice state/API propagation can lag immediately after channel creation.
-    // Give Fluxer a short second chance before declaring the move failed.
     if (!moved) {
       await new Promise((resolve) => setTimeout(resolve, 350));
       moved = await moveMember(guild, userId, channel.id);
@@ -375,12 +310,6 @@ async function createChannelForUser(
     }
   }
 
-  /**
-   * The control panel is informational.
-   *
-   * Its image is now a remote URL, so no file upload
-   * / ATTACH_FILES permission is needed.
-   */
   await postDashboard(
     client,
     channel,
@@ -388,10 +317,6 @@ async function createChannelForUser(
     settings.prefix ?? '!',
   ).catch(() => {});
 
-  /**
-   * If the member was not successfully moved or left
-   * immediately, clean the empty channel later.
-   */
   setTimeout(() => {
     sweepEmptyChannels(
       client,
@@ -400,17 +325,11 @@ async function createChannelForUser(
   }, NEW_CHANNEL_GRACE_MS + 2_000).unref?.();
 }
 
-/**
- * Deletes temporary channels that are confirmed empty.
- */
 export async function sweepEmptyChannels(
   client,
   guild,
 ) {
-  /**
-   * Never delete anything if we haven't received a complete
-   * voice-state snapshot for this guild.
-   */
+
   if (!hasGuildState(guild.id)) {
     return;
   }
@@ -426,17 +345,11 @@ export async function sweepEmptyChannels(
         .fetch(row.channel_id)
         .catch(() => null));
 
-    /**
-     * The channel was manually deleted.
-     */
     if (!channel) {
       deleteTempChannel(row.channel_id);
       continue;
     }
 
-    /**
-     * Don't immediately delete a newly-created channel.
-     */
     if (
       now - row.created_at * 1000 <
       NEW_CHANNEL_GRACE_MS
@@ -446,10 +359,6 @@ export async function sweepEmptyChannels(
 
     let memberCount = countMembersInChannel(guild, row.channel_id);
 
-    // The dashboard and cleanup must never treat a temporary channel as
-    // empty just because a voice-state snapshot briefly lagged behind.
-    // The owner is a safe fallback: a temp channel cannot be considered
-    // empty while its recorded owner is still in that channel.
     if (
       memberCount === 0 &&
       getUserVoiceChannelId(guild.id, row.owner_id) === row.channel_id
@@ -483,21 +392,15 @@ export async function sweepEmptyChannels(
       continue;
     }
 
-    /**
-     * Only remove the DB row after the API deletion succeeds.
-     */
     try {
       await channel.delete();
       deleteTempChannel(row.channel_id);
     } catch {
-      // Keep the DB row so a later sweep can retry.
+
     }
   }
 }
 
-/**
- * Resolve a temporary channel owned by a member.
- */
 export function resolveOwnedChannel(
   guildId,
   userId,
@@ -508,10 +411,6 @@ export function resolveOwnedChannel(
   );
 }
 
-/**
- * Resolve the temporary channel the member
- * is currently inside.
- */
 export function resolveCurrentChannel(
   guild,
   userId,
@@ -527,9 +426,6 @@ export function resolveCurrentChannel(
     : null;
 }
 
-/**
- * Transfer ownership.
- */
 export async function transferOwnership(
   client,
   guild,
@@ -563,10 +459,6 @@ export async function transferOwnership(
       .catch(() => {});
   }
 
-  /**
-   * Ownership permissions are deliberately limited.
-   * Voicey performs channel management itself.
-   */
   if (guild.ownerId !== newOwnerId) {
     await channel.permissionOverwrites
       .edit(newOwnerId, {

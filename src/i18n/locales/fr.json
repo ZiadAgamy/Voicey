@@ -4,6 +4,8 @@
     "flag": "🇫🇷"
   },
   "common.error": "Une erreur s'est produite. Réessaie dans un instant.",
+  "common.command_disabled": "Cette commande est désactivée sur ce serveur.",
+  "common.command_no_access": "Vous n'avez pas accès à cette commande sur ce serveur.",
   "common.no_permission": "Tu n'as pas la permission de faire cela.",
   "common.no_voice_channel": "Tu dois être dans un canal vocal temporaire pour faire cela.",
   "common.not_owner": "Seul le propriétaire du canal peut faire cela.",

@@ -1,4 +1,3 @@
-
 import { EmbedBuilder } from '@fluxerjs/core';
 import { t } from '../i18n/index.js';
 

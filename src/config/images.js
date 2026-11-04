@@ -1,14 +1,3 @@
-/**
- * Optional embed thumbnails.
- *
- * Voicey works fine with no images at all. To show a thumbnail in an embed,
- * host a PNG somewhere permanent and put its direct URL in your `.env`:
- *
- *   VOICEY_IMAGE_WELCOME=https://example.com/welcome.png
- *
- * Note: Fluxer/Discord CDN attachment links are signed and EXPIRE, so they are
- * a bad choice here. Use a permanent host (your own site, GitHub raw, etc).
- */
 const KEYS = [
   'welcome',
   'control',

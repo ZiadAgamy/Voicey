@@ -4,6 +4,8 @@
     "flag": "🇬🇧"
   },
   "common.error": "Something went wrong. Try again in a moment.",
+  "common.command_disabled": "This command is disabled on this server.",
+  "common.command_no_access": "You don't have access to this command on this server.",
   "common.no_permission": "You don't have permission to do that.",
   "common.no_voice_channel": "You need to be in a temporary voice channel for that.",
   "common.not_owner": "Only the channel owner can do that.",

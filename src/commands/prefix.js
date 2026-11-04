@@ -17,7 +17,7 @@ function isValidPrefix(value) {
 export default {
   name: 'prefix',
 
-  async execute({ message, args, locale, prefix }) {
+  async execute({ message, args, locale, prefix, access }) {
     if (!message.guildId) {
       return message.reply(t(locale, 'common.dm_only_in_guild'));
     }
@@ -28,13 +28,14 @@ export default {
       return message.reply(t(locale, 'common.error'));
     }
 
-    // Resolve the member so we can check their permissions.
+    // Check member permissions before action.
     const member =
       guild.members.get(message.author.id) ??
       (await guild.fetchMember(message.author.id).catch(() => null));
 
     const isOwner = guild.ownerId === message.author.id;
     const canManagePrefix =
+      access?.granted === true ||
       isOwner ||
       member?.permissions?.has(PermissionFlags.ManageGuild) === true;
 

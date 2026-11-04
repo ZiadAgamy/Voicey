@@ -5,8 +5,8 @@ import path from 'node:path';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LOCALES_DIR = path.join(__dirname, 'locales');
 
-const packs = new Map(); // localeCode -> flat key->string map
-const meta = new Map(); // localeCode -> { name, flag }
+const packs = new Map(); //StringMap
+const meta = new Map(); // LocaleCode Flag
 
 function flatten(obj, prefix = '', out = {}) {
   for (const [key, value] of Object.entries(obj)) {
@@ -42,12 +42,6 @@ function interpolate(str, vars) {
   return str.replace(/\{(\w+)\}/g, (m, key) => (key in vars ? String(vars[key]) : m));
 }
 
-/**
- * t(locale, key, vars?) — looks up `key` in the given locale's flattened
- * pack, falling back to DEFAULT_LOCALE, then to the raw key itself so a
- * missing string never crashes a command — it just shows the key untranslated,
- * which is easy to spot and fix.
- */
 export function t(locale, key, vars) {
   const pack = packs.get(locale) ?? packs.get(DEFAULT_LOCALE);
   let str = pack?.[key];

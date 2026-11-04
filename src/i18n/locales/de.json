@@ -4,6 +4,8 @@
     "flag": "🇩🇪"
   },
   "common.error": "Etwas ist schiefgelaufen. Bitte versuche es später nochmal.",
+  "common.command_disabled": "Dieser Befehl ist auf diesem Server deaktiviert.",
+  "common.command_no_access": "Du hast auf diesem Server keinen Zugriff auf diesen Befehl.",
   "common.no_permission": "Du hast keine Berechtigung dies zu tun.",
   "common.no_voice_channel": "Du musst in einen Temporären Voice Channel sein für das.",
   "common.not_owner": "Nur der Channel Inhaber kann das tun.",

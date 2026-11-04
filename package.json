@@ -1,20 +1,21 @@
 {
   "name": "voicey",
-  "version": "2.1.2",
+  "version": "3.3.0",
   "description": "Voicey — easy Temporary Voice Channel bot for Fluxer with prefix commands.",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "check": "node --check src/index.js && for f in src/commands/*.js src/services/*.js src/utils/*.js src/config/*.js src/db/*.js src/handlers/*.js src/i18n/*.js; do node --check \"$f\"; done"
+    "check": "node --check src/index.js && for f in src/commands/*.js src/services/*.js src/utils/*.js src/config/*.js src/db/*.js src/handlers/*.js src/i18n/*.js src/web/*.js; do node --check \"$f\"; done"
   },
   "engines": {
     "node": ">=22.13.0"
   },
   "dependencies": {
     "@fluxerjs/core": "^3.3.0",
-    "dotenv": "^16.6.1"
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2"
   },
   "license": "MIT",
   "author": "ZiadAgamy",

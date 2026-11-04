@@ -8,8 +8,8 @@ import { t } from '../i18n/index.js';
 import { Emojis } from '../config/emojis.js';
 import { embedWithAsset } from '../utils/embedAssets.js';
 
-async function canManage(guild, userId) {
-  if (guild.ownerId === userId) return true;
+async function canManage(guild, userId, granted = false) {
+  if (granted || guild.ownerId === userId) return true;
   const member = guild.members.get(userId) ??
     (await guild.fetchMember(userId).catch(() => null));
   return Boolean(member?.permissions?.has(PermissionFlags.ManageGuild));
@@ -21,13 +21,13 @@ function renderTemplate(template) {
 
 export default {
   name: 'settings',
-  async execute({ message, args, locale, prefix, client }) {
+  async execute({ message, args, locale, prefix, client, access }) {
     if (!message.guildId) return message.reply(t(locale, 'common.dm_only_in_guild'));
 
     const guild = await message.resolveGuild();
     if (!guild) return message.reply(t(locale, 'common.error'));
 
-    if (!(await canManage(guild, message.author.id))) {
+    if (!(await canManage(guild, message.author.id, access?.granted))) {
       return message.reply(t(locale, 'settings.no_permission'));
     }
 

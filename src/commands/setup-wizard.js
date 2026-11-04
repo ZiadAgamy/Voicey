@@ -88,7 +88,7 @@ async function ask(client, channel, userId, prompt, fallback) {
 export default {
   name: 'setup-wizard',
   aliases: ['wizard'],
-  async execute({ client, message, locale, prefix }) {
+  async execute({ client, message, locale, prefix, access }) {
     if (!message.guildId) return message.reply(t(locale, 'common.dm_only_in_guild'));
 
     const guild = await message.resolveGuild();
@@ -97,6 +97,7 @@ export default {
     const member = guild.members.get(message.author.id) ??
       (await guild.fetchMember(message.author.id).catch(() => null));
     if (
+      !access?.granted &&
       guild.ownerId !== message.author.id &&
       !member?.permissions?.has(PermissionFlags.ManageGuild)
     ) {

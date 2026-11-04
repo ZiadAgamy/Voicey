@@ -1,4 +1,4 @@
-// src/services/logger.js
+// logs every error on a webhook messenger
 
 const WEBHOOK_URL = process.env.VOICEY_LOG_WEBHOOK_URL;
 const BRAND_COLOR = 0x4641d9;
