@@ -112,6 +112,7 @@ src/
   db/                    SQLite schema and queries
   i18n/locales/          translations (en, ar, de, es, fr)
   config/                emoji and image configuration
+  web/                   the dashboard folder
 ```
 
 Data is stored in `data/voicey.sqlite`, created on first run. Back this folder up if you care about server settings.
