@@ -19,7 +19,7 @@
 - [Commands](#commands)
 - [Troubleshooting](#troubleshooting)
 - [Structures](#structures)
-- [Contributing](#CONTRIBUTING.md)
+- [Contributing](#Contributing)
 - [LICENSE](#LICENSE)
 
 ---
