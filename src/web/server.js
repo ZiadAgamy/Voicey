@@ -328,7 +328,7 @@ export function startWebDashboard(client) {
       id: req.session.userId,
       username: req.session.username,
       avatarUrl: userAvatarUrl(req.session.userId, req.session.avatar),
-      inviteUrl: `https://web.fluxer.app/oauth2/authorize?client_id=${encodeURIComponent(clientId)}&scope=bot&permissions=18014398810778736`,
+      inviteUrl: `https://web.fluxer.app/oauth2/authorize?client_id=${encodeURIComponent(clientId)}&scope=bot&permissions=${encodeURIComponent(process.env.INVITE_PERMISSIONS || '18014398862969936')}`,
       botName: client.user?.username ?? 'Voicey',
       bot: globalIdentity(),
     });
